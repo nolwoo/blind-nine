@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>블라인드 나인</title>
+
+<style>
+  /* ===================================================================
+     블라인드 나인 — 디자인 언어: Dell.com (1996) 구조 + 모던 타이포
+     · 검정 8px 액자 프레임 · 플랫 8비트 컬러블록 리본카드
+     · Pretendard (system sans 폴백) · radius 0 · 소프트 섀도우 금지
+     · Dell red(#e91d2a)는 화면당 1개 CTA에만 · Dell yellow는 스티커에만
+     -------------------------------------------------------------------
+     폰트만 CDN(Pretendard) — 실패해도 시스템 산세리프로 정상 동작.
+     정보 공개 규칙(§1.2)은 각 화면 함수 주석에 표기.
+     =================================================================== */
+
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  :root{
+    --ink:#000000;
+    --canvas:#ffffff;
+    --red:#e91d2a;      /* Dell red — CTA / seal 전용 */
+    --yellow:#fcc20f;   /* Dell yellow — 스티커 전용 */
+    --purple:#6a26a4;
+    --link:#0000ee;
+    --p1:#d77a7a;        /* tint-salmon = 1P */
+    --p2:#b3bd95;        /* tint-sage   = 2P */
+    --draw:#6a26a4;
+    --steel:#a5b8c0;     /* 무 / 중립 */
+    --sky:#9ab6c8;
+    --peri:#8c9ae0;
+    --disabled:#9a9a9a;
+    --font:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Segoe UI','Malgun Gothic',system-ui,sans-serif;
+    --muted:#565656;
+  }
+
+  html,body{ background:var(--canvas); }
+  body{
+    font-family:var(--font);
+    color:var(--ink);
+    font-weight:400;
+    letter-spacing:-0.01em;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    min-height:100vh;
+    display:flex; justify-content:center;
+  }
+
+  /* ---- page-frame : 검정 액자 ---- */
+  .frame{
+    width:100%; max-width:468px;
+    border:8px solid var(--ink);
+    background:var(--canvas);
+    min-height:100vh;
+    display:flex; flex-direction:column;
+  }
+  @media (max-width:480px){ .frame{ border-width:5px; } }
+
+  /* ---- top-banner ---- */
+  .banner{
+    background:var(--ink); color:var(--canvas);
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:9px 12px;
+  }
+  .banner-title{
+    font-family:var(--font);
+    font-weight:800; font-size:15px; letter-spacing:-.02em;
+    white-space:nowrap;
+  }
+  .tileglyph{
+    width:22px; height:22px;
+    background:var(--yellow); color:var(--ink);
+    border:1px solid var(--ink);
+    font-family:var(--font); font-weight:900; font-size:12px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .callout-r{
+    background:var(--ink); color:var(--red);
+    border:1px solid var(--red);
+    font-family:var(--font); font-weight:900;
+    font-size:11px; letter-spacing:.02em;
+    padding:3px 6px; white-space:nowrap;
+  }
+
+  /* ---- screen wrapper ---- */
+  .screen{ position:relative; overflow:hidden; flex:1; display:flex; flex-direction:column; }
+
+  /* ---- section eyebrow (tinted display block) ---- */
+  .eyebrow{
+    padding:22px 16px; text-align:center;
+    border-bottom:3px solid var(--ink);
+    position:relative;
+  }
+  .kicker{
+    font-family:var(--font); font-weight:700;
+    font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted);
+  }
+  .display{
+    font-family:var(--font); font-weight:800;
+    font-size:32px; line-height:1.08; letter-spacing:-.035em; color:var(--ink);
+    margin:6px 0; padding:0 40px;
+  }
+  .display.sm{ font-size:25px; }
+  .serif{ font-family:inherit; font-size:14px; line-height:1.6; }
+  .serif.i{ color:var(--muted); }
+  .serif.sm{ font-size:12px; }
+
+  /* ---- ribbon card ---- */
+  .ribbon{ border:2px solid var(--ink); margin:12px; }
+  .ribbon-title{
+    background:var(--canvas); color:var(--ink);
+    border-bottom:3px solid var(--ink);
+    font-family:var(--font); font-weight:700;
+    font-size:12px; letter-spacing:.02em; text-transform:uppercase;
+    padding:7px 12px;
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+  }
+  .ribbon-title .rt-note{
+    font-family:var(--font);
+    font-weight:400; font-size:11px; letter-spacing:-.01em; text-transform:none; color:var(--muted);
+  }
+  .ribbon-body{ padding:12px 14px; }
+
+  .rule{ display:flex; gap:8px; align-items:flex-start; margin-bottom:7px; }
+  .rule:last-child{ margin-bottom:0; }
+  .rule .n{
+    flex:none;
+    width:20px; height:20px;
+    background:var(--ink); color:var(--canvas);
+    font-family:var(--font); font-weight:900; font-size:12px;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* ---- CTA : Dell red, 화면당 1개 ---- */
+  .cta{
+    display:block; width:calc(100% - 24px); margin:12px; margin-top:auto;
+    background:var(--red); color:var(--canvas);
+    border:2px solid var(--ink);
+    font-family:var(--font); font-weight:800;
+    font-size:16px; letter-spacing:-.01em;
+    padding:14px 12px; text-align:center; cursor:pointer;
+    transition:transform 80ms ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .cta:active{ transform:translate(1px,1px); }
+  .cta:disabled{ background:var(--disabled); color:var(--canvas); cursor:not-allowed; transform:none; }
+
+  /* ---- 보조 버튼 (흰 아웃라인) ---- */
+  .startbtns{ margin-top:auto; }
+  .cta2{
+    display:block; width:calc(100% - 24px); margin:12px 12px 0;
+    background:var(--canvas); color:var(--ink);
+    border:2px solid var(--ink);
+    font-family:var(--font); font-weight:700;
+    font-size:13px; letter-spacing:-.01em;
+    padding:11px 12px; text-align:center; cursor:pointer;
+    transition:transform 80ms ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .cta2:active{ transform:translate(1px,1px); }
+  .startbtns .cta{ margin-top:12px; }
+
+  /* ---- 시작화면 스티커 콜라주 ---- */
+  .collage{ background:var(--canvas); position:relative; height:290px; }
+  .st{
+    position:absolute;
+    width:74px; height:74px; border-radius:9999px;
+    background:var(--red); color:var(--canvas); border:3px solid var(--ink);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-family:var(--font); font-weight:900; line-height:1.05; text-align:center;
+  }
+  .st.dark{ background:var(--ink); }
+  .st .big{ font-size:19px; }
+  .st .cap{ font-size:8px; letter-spacing:.04em; }
+  .tstack{ position:absolute; left:50%; top:96px; transform:translateX(-52%); width:78px; height:78px; }
+  .tstack i{ position:absolute; width:62px; height:62px; border:2px solid var(--ink); }
+  .tstack .l1{ background:var(--ink); left:16px; top:16px; }
+  .tstack .l2{ background:var(--canvas); left:8px; top:8px; }
+  .tstack .l3{
+    background:var(--canvas); left:0; top:0;
+    box-shadow:3px 3px 0 var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font); font-weight:900; font-size:28px;
+  }
+  .collage .note{
+    position:absolute; left:16px; bottom:16px; max-width:170px;
+    color:var(--muted); font-size:13px; line-height:1.5;
+  }
+
+  /* ---- scoreboard ---- */
+  .sb-split{ display:flex; border-bottom:3px solid var(--ink); }
+  .sb-cell{ flex:1; text-align:center; padding:7px 4px; }
+  .sb-cell.b1{ background:var(--p1); border-right:3px solid var(--ink); }
+  .sb-cell.b2{ background:var(--p2); }
+  .sb-cell .lab{ font-family:var(--font); font-weight:900; font-size:10px; letter-spacing:.06em; }
+  .sb-cell .num{ font-family:var(--font); font-weight:900; font-size:26px; line-height:1; }
+
+  .turnbar{
+    background:var(--ink); color:var(--canvas);
+    font-family:var(--font); font-weight:700;
+    font-size:11px; letter-spacing:.02em; text-transform:uppercase;
+    text-align:center; padding:7px 8px;
+    margin:12px 12px 0;
+  }
+
+  /* ---- tile grid ---- */
+  .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .tile{
+    aspect-ratio:1/1;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font); font-weight:800; font-size:27px; letter-spacing:-.02em;
+    border:2px solid var(--ink);
+    cursor:pointer; user-select:none;
+    transition:transform 80ms ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .tile.odd{ background:var(--canvas); color:var(--ink); }   /* 홀수 = 흰 타일 */
+  .tile.even{ background:var(--ink); color:var(--canvas); }  /* 짝수 = 검은 타일 */
+  .tile.sel{ background:var(--red); color:var(--canvas); transform:translate(1px,1px); }
+  .tile:active{ transform:translate(1px,1px); }
+
+  .legend{
+    text-align:center; margin-top:9px;
+    font-size:11px; color:var(--muted);
+  }
+  .legend .sw{ display:inline-block; width:9px; height:9px; border:1.5px solid var(--ink); vertical-align:middle; margin:0 3px 2px 8px; }
+
+  /* ---- MY HISTORY (자기 정보 전용 — 상대 데이터 render 금지) ---- */
+  .hrow{ display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+  .hrow:last-child{ margin-bottom:0; }
+  .hrow .hr{ font-family:var(--font); font-weight:900; font-size:10px; width:22px; flex:none; }
+  .hrow .ht{
+    width:24px; height:24px; flex:none;
+    border:2px solid var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font); font-weight:900; font-size:13px;
+  }
+  .hrow .hres{
+    flex:1; text-align:center;
+    border:2px solid var(--ink);
+    font-family:var(--font); font-weight:900; font-size:11px;
+    letter-spacing:.06em; text-transform:uppercase;
+    padding:3px 0;
+  }
+  .hempty{ font-size:12px; color:var(--muted); padding:2px 0; }
+
+  /* ---- round result : 홀/짝만 (raw 숫자 절대 금지) ---- */
+  .parity-split{ display:flex; border-bottom:3px solid var(--ink); }
+  .parity-cell{ flex:1; text-align:center; padding:12px 8px; }
+  .parity-cell.pc1{ border-right:3px solid var(--ink); }
+  .parity-cell .plab{
+    font-family:var(--font); font-weight:900; font-size:10px;
+    color:var(--canvas); border:2px solid var(--ink); padding:2px 0; margin-bottom:7px;
+  }
+  .psq{
+    width:62px; height:62px; margin:0 auto;
+    border:3px solid var(--ink);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-family:var(--font); font-weight:900;
+  }
+  .psq .pt{ font-size:7px; letter-spacing:.08em; opacity:.8; }
+  .psq .pk{ font-size:20px; line-height:1; }
+  .psq.odd{ background:var(--canvas); color:var(--ink); }
+  .psq.even{ background:var(--ink); color:var(--canvas); }
+  .psq.win{ border-width:5px; }
+  .wintag{
+    display:inline-block; margin-top:5px;
+    background:var(--yellow); color:var(--ink); border:1px solid var(--ink);
+    font-family:var(--font); font-weight:900; font-size:8px;
+    letter-spacing:.06em; padding:1px 4px;
+  }
+  .score-band{
+    background:var(--yellow);
+    border-bottom:3px solid var(--ink);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 14px;
+  }
+  .score-band .sbl{ font-size:12px; font-weight:600; color:#3a3a3a; }
+  .score-band .sval{ font-family:var(--font); font-weight:900; font-size:16px; }
+
+  /* ---- award seal (원형은 여기만) ---- */
+  .seal{
+    position:absolute; top:10px; right:10px;
+    width:64px; height:64px; border-radius:9999px;
+    background:var(--red); color:var(--canvas);
+    border:3px solid var(--ink);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-family:var(--font); font-weight:900; line-height:1.05;
+    text-align:center;
+  }
+  .seal .s1{ font-size:9px; letter-spacing:.04em; }
+  .seal .s2{ font-size:13px; }
+
+  /* ---- NEW! burst 스티커 ---- */
+  .burst{
+    position:absolute;
+    display:flex; align-items:center; justify-content:center;
+    width:50px; height:50px;
+    background:var(--yellow); color:var(--ink);
+    font-family:var(--font); font-weight:900; font-size:12px;
+    text-align:center;
+    clip-path:polygon(50% 0,60% 13%,76% 6%,78% 24%,95% 27%,85% 42%,100% 55%,84% 63%,90% 80%,71% 78%,61% 95%,50% 82%,39% 95%,29% 78%,10% 80%,16% 63%,0 55%,15% 42%,5% 27%,22% 24%,24% 6%,40% 13%);
+  }
+
+  /* ---- confetti (플랫 사각 · 소프트 섀도우 없음) ---- */
+  .cf{ position:absolute; top:-18px; width:9px; height:13px; border:1px solid var(--ink); pointer-events:none; }
+  @keyframes fall{ from{ transform:translateY(0) rotate(0); opacity:1; } to{ transform:translateY(120vh) rotate(560deg); opacity:0; } }
+
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+/* ============================================================
+   1. 게임 상태 — §6.1 gameStore 로직 그대로 (순수 함수 reducer)
+   ============================================================ */
+
+var TINT = { '1P':'var(--p1)', '2P':'var(--p2)', 'DRAW':'var(--draw)' };
+function isOdd(n){ return n % 2 === 1; }
+function freshTiles(){ return [1,2,3,4,5,6,7,8,9]; }
+
+function initialState(){
+  return {
+    phase: 'START',              // START · PLAYER_START · PLAYER_TURN · ROUND_RESULT · GAME_OVER
+    round: 1,
+    scores: { '1P': 0, '2P': 0 },
+    remainingTiles: { '1P': freshTiles(), '2P': freshTiles() },
+    currentTurn: '1P',
+    firstPlayerThisRound: '1P',
+    selectedTilesThisRound: { '1P': null, '2P': null },
+    pendingTile: null,
+    timelineHistory: [],          // { round, p1Tile, p2Tile, winner } — 내부 누적, 양쪽 전체 render 금지
+    winner: null,
+    lastRoundResult: null,
+  };
+}
+
+var state = initialState();
+
+function reducer(s, action){
+  switch (action.type){
+
+    case 'START_GAME': {
+      var first = Math.random() < 0.5 ? '1P' : '2P';
+      var n = initialState();
+      n.phase = 'PLAYER_START';
+      n.firstPlayerThisRound = first;
+      n.currentTurn = first;
+      return n;
+    }
+
+    case 'CONFIRM_PLAYER_START':
+      return Object.assign({}, s, { phase: 'PLAYER_TURN', pendingTile: null });
+
+    case 'SELECT_TILE':
+      return Object.assign({}, s, { pendingTile: action.tile });
+
+    case 'CONFIRM_TURN': {
+      if (s.pendingTile === null) return s;
+      var cur = s.currentTurn;
+      var second = s.firstPlayerThisRound === '1P' ? '2P' : '1P';
+      var remainingTiles = Object.assign({}, s.remainingTiles);
+      remainingTiles[cur] = s.remainingTiles[cur].filter(function(t){ return t !== s.pendingTile; });
+      var selectedTilesThisRound = Object.assign({}, s.selectedTilesThisRound);
+      selectedTilesThisRound[cur] = s.pendingTile;
+
+      if (cur === s.firstPlayerThisRound){
+        // 첫 플레이어 완료 → 두 번째 플레이어 전환 화면으로
+        return Object.assign({}, s, {
+          selectedTilesThisRound: selectedTilesThisRound,
+          remainingTiles: remainingTiles,
+          pendingTile: null,
+          currentTurn: second,
+          phase: 'PLAYER_START',
+        });
+      }
+
+      // 두 번째 플레이어 완료 → 라운드 판정
+      var p1 = selectedTilesThisRound['1P'];
+      var p2 = selectedTilesThisRound['2P'];
+      var winner = 'DRAW';
+      if (p1 === 1 && p2 === 9) winner = '1P';        // 반전 규칙: 1 이 9 를 이긴다
+      else if (p2 === 1 && p1 === 9) winner = '2P';
+      else if (p1 > p2) winner = '1P';
+      else if (p2 > p1) winner = '2P';
+
+      var scores = Object.assign({}, s.scores);
+      if (winner !== 'DRAW') scores[winner] += 1;
+
+      var result = { round: s.round, p1Tile: p1, p2Tile: p2, winner: winner };
+      return Object.assign({}, s, {
+        selectedTilesThisRound: selectedTilesThisRound,
+        remainingTiles: remainingTiles,
+        pendingTile: null,
+        scores: scores,
+        timelineHistory: s.timelineHistory.concat([result]),
+        lastRoundResult: result,
+        phase: 'ROUND_RESULT',
+      });
+    }
+
+    case 'CONFIRM_ROUND_RESULT': {
+      var last = s.lastRoundResult;
+      if (!last) return s;
+      var nextFirst = last.winner === 'DRAW' ? s.firstPlayerThisRound : last.winner;
+
+      // 종료 조건: 5승 선취 또는 9라운드 소진
+      if (s.scores['1P'] >= 5 || s.scores['2P'] >= 5 || s.round >= 9){
+        var gw = 'DRAW';
+        if (s.scores['1P'] > s.scores['2P']) gw = '1P';
+        else if (s.scores['2P'] > s.scores['1P']) gw = '2P';
+        return Object.assign({}, s, { phase: 'GAME_OVER', winner: gw, lastRoundResult: null });
+      }
+      return Object.assign({}, s, {
+        round: s.round + 1,
+        firstPlayerThisRound: nextFirst,
+        currentTurn: nextFirst,
+        selectedTilesThisRound: { '1P': null, '2P': null },
+        lastRoundResult: null,
+        phase: 'PLAYER_START',
+      });
+    }
+
+    case 'OPEN_RULES':
+      return Object.assign({}, s, { phase: 'RULES' });
+
+    case 'CLOSE_RULES':
+      return Object.assign({}, s, { phase: 'START' });
+
+    case 'RESET':
+      return initialState();
+
+    default:
+      return s;
+  }
+}
+
+function dispatch(action){
+  state = reducer(state, action);
+  render();
+}
+
+
+/* ============================================================
+   2. 뷰 — 상태 → HTML 문자열
+   ------------------------------------------------------------
+   정보 공개 매트릭스(§1.2)
+   · START        : 룰 안내만
+   · PLAYER_START : 아무것도 노출 안 함 ("상대에게 보이지 마세요")
+   · PLAYER_TURN  : 자기 패 숫자 O · MY HISTORY(자기 숫자+승패) O · 스코어 O
+   · ROUND_RESULT : 홀/짝만 · raw 숫자 절대 금지 · 스코어 O
+   · GAME_OVER    : 승자 + 축하 카피만 · 스코어/히스토리 전부 숨김
+   ============================================================ */
+
+var CONF_PALETTE = ['var(--p1)','var(--p2)','var(--yellow)','var(--red)','var(--ink)','var(--peri)'];
+
+function confettiHTML(n){
+  var out = '';
+  for (var i = 0; i < n; i++){
+    var left  = Math.random() * 100;
+    var dur   = 2 + Math.random() * 1.6;
+    var delay = Math.random() * 0.7;
+    var color = CONF_PALETTE[i % CONF_PALETTE.length];
+    var rot   = Math.random() * 40 - 20;
+    out += '<span class="cf" style="left:' + left + '%;background:' + color +
+           ';transform:rotate(' + rot + 'deg);animation:fall ' + dur + 's linear ' + delay + 's both"></span>';
+  }
+  return out;
+}
+
+function bannerHTML(){
+  return '' +
+    '<div class="banner">' +
+      '<span class="banner-title">블라인드 나인</span>' +
+      '<span style="display:flex;gap:6px;align-items:center">' +
+        '<span class="callout-r">1 &#9654; 9</span>' +
+        '<span class="tileglyph">9</span>' +
+      '</span>' +
+    '</div>';
+}
+
+function startHTML(){
+  return '' +
+  '<div class="screen">' +
+    '<div class="eyebrow" style="background:var(--peri)">' +
+      '<div class="display">블라인드 나인</div>' +
+      '<div class="serif i">상대 패는 비밀. 1은 9를 이긴다.</div>' +
+    '</div>' +
+
+    /* ── 스티커 콜라주 (빈 공간 채우기) ── */
+    '<div class="ribbon"><div class="ribbon-body collage">' +
+      '<div class="st" style="top:18px;left:16px"><span class="big">9</span><span class="cap">TILES</span></div>' +
+      '<div class="burst" style="top:20px;right:20px;transform:rotate(12deg);width:64px;height:64px;font-size:11px;line-height:1.15">반전<br>규칙</div>' +
+      '<div class="tstack"><i class="l1"></i><i class="l2"></i><i class="l3">7</i></div>' +
+      '<div class="st dark" style="bottom:66px;right:22px"><span class="big">5</span><span class="cap">WINS</span></div>' +
+      '<div class="note">한 대의 기기를<br>번갈아 넘기며 진행</div>' +
+    '</div></div>' +
+
+    '<div class="ribbon">' +
+      '<div class="ribbon-title">게임 규칙</div>' +
+      '<div class="ribbon-body" style="background:var(--p2)">' +
+        '<div class="rule"><span class="n">1</span><span class="serif">1~9 타일 중 매 라운드 하나를 낸다</span></div>' +
+        '<div class="rule"><span class="n">2</span><span class="serif">큰 숫자가 이김 — 단, 1은 9를 이긴다</span></div>' +
+        '<div class="rule"><span class="n">3</span><span class="serif">먼저 5승 하면 즉시 승리</span></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="startbtns">' +
+      '<button class="cta2" data-act="openRules">규칙 자세히 보기</button>' +
+      '<button class="cta" data-act="start">게임 시작 &#9654;</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function rulesHTML(){
+  return '' +
+  '<div class="screen">' +
+    '<div class="eyebrow" style="background:var(--peri)">' +
+      '<div class="display sm">게임 규칙</div>' +
+      '<div class="serif i">천천히 읽어도 됩니다</div>' +
+    '</div>' +
+
+    '<div class="ribbon">' +
+      '<div class="ribbon-title">기본 진행</div>' +
+      '<div class="ribbon-body" style="background:var(--p2)">' +
+        '<div class="rule"><span class="n">1</span><span class="serif">각자 1~9 타일 9장으로 시작. 매 라운드 한 장씩 <b>비공개</b>로 낸다.</span></div>' +
+        '<div class="rule"><span class="n">2</span><span class="serif">둘 다 내면 공개 — 그 라운드 승자를 가린다.</span></div>' +
+        '<div class="rule"><span class="n">3</span><span class="serif">라운드 승자가 다음 라운드 <b>선(先)</b>. 무승부면 직전 선 유지.</span></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="ribbon">' +
+      '<div class="ribbon-title">반전 규칙</div>' +
+      '<div class="ribbon-body" style="background:var(--yellow)">' +
+        '<span class="serif">기본은 <b>큰 숫자가 승</b>. 단 <b>1은 9를 이긴다</b>. 같은 숫자는 없음(서로 다른 9장).</span>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="ribbon">' +
+      '<div class="ribbon-title">승리 조건</div>' +
+      '<div class="ribbon-body" style="background:var(--steel)">' +
+        '<span class="serif"><b>먼저 5승</b> → 즉시 종료. 아니면 <b>9라운드</b> 모두 진행 후 점수 많은 쪽 승.</span>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="ribbon">' +
+      '<div class="ribbon-title">화면을 넘길 때</div>' +
+      '<div class="ribbon-body" style="background:#fff">' +
+        '<span class="serif">"넘겨주세요" 화면이 뜨면 상대에게 기기를 건네고, 내 차례 화면은 상대가 보지 않게 한다.</span>' +
+      '</div>' +
+    '</div>' +
+
+    '<button class="cta" data-act="closeRules">돌아가기 &#9654;</button>' +
+  '</div>';
+}
+
+function playerStartHTML(){
+  var p = state.currentTurn;
+  var order = p === state.firstPlayerThisRound ? '선공' : '후공';
+  return '' +
+  '<div class="screen">' +
+    '<div class="turnbar" style="margin:12px">PLAYER TURN — 이 기기를 넘겨주세요</div>' +
+    '<div class="eyebrow" style="background:' + TINT[p] + ';border-top:3px solid var(--ink);margin:0 12px">' +
+      '<div class="kicker">ROUND ' + state.round + ' · ' + order + '</div>' +
+      '<div class="display">' + p + ' 차례</div>' +
+      '<div class="serif i">상대에게 화면을 보여주지 마세요</div>' +
+    '</div>' +
+    '<button class="cta" data-act="confirmStart">시작 &#9654;</button>' +
+  '</div>';
+}
+
+function scoreboardHTML(){
+  return '' +
+  '<div class="ribbon" style="margin-bottom:0">' +
+    '<div class="ribbon-title"><span>ROUND ' + state.round + ' / 9</span><span class="rt-note">먼저 5승 시 승리</span></div>' +
+    '<div class="sb-split" style="border-bottom:none">' +
+      '<div class="sb-cell b1"><div class="lab">1P</div><div class="num">' + state.scores['1P'] + '</div></div>' +
+      '<div class="sb-cell b2"><div class="lab">2P</div><div class="num">' + state.scores['2P'] + '</div></div>' +
+    '</div>' +
+  '</div>';
+}
+
+function myHistoryHTML(){
+  var player = state.currentTurn;                    // 자기 화면 → 자기 것만
+  var hist = state.timelineHistory;
+  var rows;
+  if (hist.length === 0){
+    rows = '<div class="hempty">아직 기록 없음</div>';
+  } else {
+    rows = hist.map(function(r){
+      // ★ 자기 타일만 추출. 상대 데이터는 어떤 형태로도 render 하지 않는다.
+      var myTile = player === '1P' ? r.p1Tile : r.p2Tile;
+      var res = r.winner === player ? '승' : (r.winner === 'DRAW' ? '무' : '패');
+      var resBg = res === '승' ? TINT[player] : (res === '무' ? 'var(--steel)' : 'var(--ink)');
+      var resFg = res === '패' ? 'var(--canvas)' : 'var(--ink)';
+      var tb = isOdd(myTile) ? 'var(--canvas)' : 'var(--ink)';
+      var tf = isOdd(myTile) ? 'var(--ink)' : 'var(--canvas)';
+      return '<div class="hrow">' +
+        '<span class="hr">R' + r.round + '</span>' +
+        '<span class="ht" style="background:' + tb + ';color:' + tf + '">' + myTile + '</span>' +
+        '<span class="hres" style="background:' + resBg + ';color:' + resFg + '">' + res + '</span>' +
+      '</div>';
+    }).join('');
+  }
+  return '' +
+  '<div class="ribbon">' +
+    '<div class="ribbon-title">My History</div>' +
+    '<div class="ribbon-body" style="background:var(--steel)">' + rows + '</div>' +
+  '</div>';
+}
+
+function boardHTML(){
+  var p = state.currentTurn;
+  var order = p === state.firstPlayerThisRound ? '선공' : '후공';
+  var tiles = state.remainingTiles[p].map(function(t){
+    var cls = state.pendingTile === t ? 'sel' : (isOdd(t) ? 'odd' : 'even');
+    return '<button class="tile ' + cls + '" data-act="select" data-tile="' + t + '">' + t + '</button>';
+  }).join('');
+  var pend = state.pendingTile;
+  var ctaLabel = pend === null ? '타일을 선택하세요' : (pend + ' 내기 ▶');
+  var dis = pend === null ? ' disabled' : '';
+  return '' +
+  '<div class="screen">' +
+    '<div style="padding:12px 12px 0">' + scoreboardHTML() + '</div>' +
+    '<div class="turnbar">' + p + ' 차례 · ' + order + ' — 타일을 고르세요</div>' +
+    '<div class="ribbon"><div class="ribbon-body" style="background:' + TINT[p] + '">' +
+      '<div class="grid">' + tiles + '</div>' +
+      '<div class="legend">' +
+        '<span class="sw" style="background:var(--canvas)"></span>홀수' +
+        '<span class="sw" style="background:var(--ink)"></span>짝수' +
+      '</div>' +
+    '</div></div>' +
+    myHistoryHTML() +
+    '<button class="cta"' + dis + ' data-act="confirmTurn">' + ctaLabel + '</button>' +
+  '</div>';
+}
+
+function parityCellHTML(who, tile, isWinner, side){
+  var odd = isOdd(tile);
+  return '' +
+  '<div class="parity-cell ' + (side === 'L' ? 'pc1' : '') + '">' +
+    '<div class="plab" style="background:' + TINT[who] + '">' + who + '</div>' +
+    '<div class="psq ' + (odd ? 'odd' : 'even') + ' ' + (isWinner ? 'win' : '') + '">' +
+      '<span class="pt">' + (odd ? 'ODD' : 'EVEN') + '</span>' +
+      '<span class="pk">' + (odd ? '홀' : '짝') + '</span>' +
+    '</div>' +
+    (isWinner ? '<div class="wintag">WIN</div>' : '') +
+  '</div>';
+}
+
+function roundResultHTML(){
+  var r = state.lastRoundResult;
+  if (!r) return '';
+  var w = r.winner;
+  var isDraw = w === 'DRAW';
+  var label = isDraw ? '무승부' : (w + ' 승리');
+  return '' +
+  '<div class="screen">' +
+    (isDraw ? '' : confettiHTML(28)) +
+    '<div class="ribbon" style="margin-bottom:0">' +
+      '<div class="ribbon-title">ROUND ' + r.round + ' — 결과</div>' +
+      '<div class="eyebrow" style="background:' + TINT[w] + ';border-bottom:3px solid var(--ink)">' +
+        (isDraw ? '' : '<div class="seal"><span class="s1">' + w + '</span><span class="s2">WIN</span></div>') +
+        '<div class="kicker">' + (isDraw ? 'DRAW' : 'WINNER') + '</div>' +
+        '<div class="display sm">' + label + '</div>' +
+        /* "1이 9를 이겼다" 류 카피 금지 — 숫자 추론됨 */
+      '</div>' +
+      /* 홀/짝만 공개 — raw 숫자 없음 */
+      '<div class="parity-split">' +
+        parityCellHTML('1P', r.p1Tile, w === '1P', 'L') +
+        parityCellHTML('2P', r.p2Tile, w === '2P', 'R') +
+      '</div>' +
+      '<div class="score-band">' +
+        '<span class="sbl">현재 스코어</span>' +
+        '<span class="sval">' + state.scores['1P'] + ' : ' + state.scores['2P'] + '</span>' +
+      '</div>' +
+    '</div>' +
+    '<button class="cta" data-act="confirmResult">다음 라운드 &#9654;</button>' +
+  '</div>';
+}
+
+function gameOverHTML(){
+  var w = state.winner;
+  var isDraw = w === 'DRAW';
+  var label = isDraw ? '무승부' : (w + ' 승리');
+  return '' +
+  '<div class="screen">' +
+    confettiHTML(40) +
+    '<div class="eyebrow" style="background:' + TINT[w] + ';margin:12px;border-top:3px solid var(--ink);padding-top:34px;padding-bottom:34px">' +
+      (isDraw ? '' : '<div class="seal" style="width:72px;height:72px"><span class="s1">CHAMP</span><span class="s2">' + w + '</span></div>') +
+      '<div class="kicker">GAME OVER</div>' +
+      '<div class="display">' + label + '</div>' +
+      /* ★ 축하 카피만. 점수표·라운드 히스토리 절대 추가하지 말 것. */
+      '<div class="serif i" style="margin-top:10px;font-size:16px">' + (isDraw ? '멋진 한 판이었어요' : '축하해요!') + '</div>' +
+      '<div class="serif sm i" style="margin-top:2px">수고했어요</div>' +
+    '</div>' +
+    '<button class="cta" data-act="reset">다시 하기 &#9654;</button>' +
+  '</div>';
+}
+
+function screenHTML(){
+  switch (state.phase){
+    case 'START':        return startHTML();
+    case 'RULES':        return rulesHTML();
+    case 'PLAYER_START': return playerStartHTML();
+    case 'PLAYER_TURN':  return boardHTML();
+    case 'ROUND_RESULT': return roundResultHTML();
+    case 'GAME_OVER':    return gameOverHTML();
+    default:             return startHTML();
+  }
+}
+
+var root = document.getElementById('root');
+
+function render(){
+  root.innerHTML = '<div class="frame">' + bannerHTML() + screenHTML() + '</div>';
+}
+
+
+/* ============================================================
+   3. 입력 — 이벤트 위임 (재렌더에도 안전)
+   ============================================================ */
+
+root.addEventListener('click', function(e){
+  var el = e.target.closest('[data-act]');
+  if (!el || el.disabled) return;
+  var act = el.getAttribute('data-act');
+  if (act === 'start')             dispatch({ type: 'START_GAME' });
+  else if (act === 'confirmStart') dispatch({ type: 'CONFIRM_PLAYER_START' });
+  else if (act === 'select')       dispatch({ type: 'SELECT_TILE', tile: parseInt(el.getAttribute('data-tile'), 10) });
+  else if (act === 'confirmTurn')  dispatch({ type: 'CONFIRM_TURN' });
+  else if (act === 'confirmResult') dispatch({ type: 'CONFIRM_ROUND_RESULT' });
+  else if (act === 'reset')        dispatch({ type: 'RESET' });
+  else if (act === 'openRules')    dispatch({ type: 'OPEN_RULES' });
+  else if (act === 'closeRules')   dispatch({ type: 'CLOSE_RULES' });
+});
+
+render();
+</script>
+</body>
+</html>
