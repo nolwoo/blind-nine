@@ -537,7 +537,7 @@ function rulesHTML(){
     '<div class="ribbon">' +
       '<div class="ribbon-title">반전 규칙</div>' +
       '<div class="ribbon-body" style="background:var(--yellow)">' +
-        '<span class="serif">기본은 <b>큰 숫자가 승</b>. 단 <b>1은 9를 이긴다</b>. 같은 숫자는 없음(서로 다른 9장).</span>' +
+        '<span class="serif">기본은 <b>큰 숫자가 승</b>. 단 <b>1은 9를 이긴다</b>. 둘이 같은 숫자를 내면 무승부.</span>' +
       '</div>' +
     '</div>' +
 
@@ -717,8 +717,12 @@ function screenHTML(){
 
 var root = document.getElementById('root');
 
+var lastScreenKey = '', lastScreenChangeAt = 0;
 function render(){
   root.innerHTML = '<div class="frame">' + bannerHTML() + screenHTML() + '</div>';
+  // 화면(단계·차례)이 실제로 바뀐 때만 기록한다 — 타일 선택 같은 같은 화면 안의 갱신은 제외
+  var key = state.phase + '|' + state.currentTurn + '|' + state.round;
+  if (key !== lastScreenKey) { if (lastScreenKey) lastScreenChangeAt = Date.now(); lastScreenKey = key; }
 }
 
 
@@ -730,6 +734,10 @@ root.addEventListener('click', function(e){
   var el = e.target.closest('[data-act]');
   if (!el || el.disabled) return;
   var act = el.getAttribute('data-act');
+  // 화면을 넘기는 버튼은 모두 같은 자리에 있어서, 두 번 빠르게 누르면 "기기 넘기기" 화면을
+  // 건너뛰고 다음 사람의 패가 보인다. 화면이 바뀐 직후의 입력은 무시한다.
+  var ADVANCE = { start: 1, confirmStart: 1, confirmTurn: 1, confirmResult: 1 };
+  if (ADVANCE[act] && Date.now() - lastScreenChangeAt < 450) return;
   if (act === 'start')             dispatch({ type: 'START_GAME' });
   else if (act === 'confirmStart') dispatch({ type: 'CONFIRM_PLAYER_START' });
   else if (act === 'select')       dispatch({ type: 'SELECT_TILE', tile: parseInt(el.getAttribute('data-tile'), 10) });
